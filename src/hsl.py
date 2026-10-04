@@ -3,7 +3,6 @@
 
 import os
 import sys
-import time
 
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(ROOT_PATH)
@@ -130,10 +129,11 @@ def list_warehouse(hProcess, addr=None):
     return ret
 
 
-def set_warehouse_item(hProcess, category, count, addr=None, current_materials=None):
+def add_warehouse_item(hProcess, category, count, addr=None, current_materials=None):
     """
     设置仓库指定物品的数量
     """
+    # TODO 添加新物品存在问题
     if count <= 0:
         raise Exception('值不能小于0')
 
@@ -173,6 +173,33 @@ def set_warehouse_item(hProcess, category, count, addr=None, current_materials=N
     memory.write_process(hProcess, base_addr + 4, count, 4)
 
 
+def set_warehouse_item(hProcess, category, count, index, addr=None, current_materials=None):
+    """
+    修改仓库已有位置的物品
+    """
+    if count <= 0:
+        raise Exception('值不能小于0')
+
+    if not addr:
+        addr = get_warehouse_address(hProcess)
+    if not addr:
+        return None
+
+    if current_materials is None:
+        materials = list_warehouse(hProcess, addr)
+    else:
+        materials = current_materials
+
+    if index < 0 or index >= len(materials):
+        raise Exception('超过修改范围')
+
+    base_addr = addr + 8 + (16 * index)
+    memory.write_process(hProcess, base_addr - 8, category, 4)
+    memory.write_process(hProcess, base_addr, category, 4)
+    memory.write_process(hProcess, base_addr + 4, count, 4)
+
+
+
 def main():
     pid = find_game_process()
     print("游戏进程： %s" % (pid))
@@ -193,7 +220,7 @@ def main():
         print("[%02d] 物品： %X，数量 ： %d" % (i, item['category'], item['count']))
         i += 1
 
-    set_warehouse_item(hProcess, 0xD4, 2, None, materials)
+    set_warehouse_item(hProcess, 0xD4, 2, 10, None, materials)
 
     memory.close_process(hProcess)
 
