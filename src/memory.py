@@ -41,50 +41,53 @@ def print_error(name):
 
 def get_process_info(pid):
     # https://docs.microsoft.com/en-us/windows/desktop/psapi/enumerating-all-modules-for-a-process
+    MAX_PATH = 260
+
     hProcess = ctypes.windll.kernel32.OpenProcess(
         PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
         False, pid
     )
     if not hProcess:
+        print_error('OpenProcess')
         return
 
-    count = 100                       # 仅获取进程执行的文件
-    hMods = (ctypes.c_ulong * count)()
-    cbNeeded = ctypes.c_ulong()
+    count = 1024
+    # HMODULE 是指针大小：32 位下 4 字节，64 位下 8 字节
+    hMods = (ctypes.wintypes.HMODULE * count)()
+    cbNeeded = ctypes.wintypes.DWORD()
 
-    ctypes.windll.psapi.EnumProcessModules(
+    if not ctypes.windll.psapi.EnumProcessModules(
         hProcess,
         ctypes.byref(hMods),
         ctypes.sizeof(hMods),
         ctypes.byref(cbNeeded)
-    )
-    num = min(cbNeeded.value / ctypes.sizeof(ctypes.c_ulong), count)
+    ):
+        print_error('EnumProcessModules')
+        ctypes.windll.kernel32.CloseHandle(hProcess)
+        return
+
+    num = min(cbNeeded.value // ctypes.sizeof(ctypes.wintypes.HMODULE), count)
     i = 0
 
     exe_name = ''
     base_addr = {}      # 各个模块的基址
     while i < num:
-        szModName = ctypes.c_buffer(100)
-        # ret = ctypes.windll.psapi.GetModuleFileNameExA(
-            # hProcess,
-            # hMods[i],
-            # szModName,
-            # ctypes.sizeof(szModName)
-        # )
-        ret = ctypes.windll.psapi.GetModuleBaseNameA(
+        szModName = ctypes.c_buffer(MAX_PATH)
+        ret = ctypes.windll.psapi.GetModuleFileNameExA(
             hProcess,
-            hMods[i],
+            ctypes.wintypes.HMODULE(hMods[i]),
             szModName,
             ctypes.sizeof(szModName)
         )
         if ret:
-            base_addr[szModName.value] = hMods[i]
-            print("process: %8d\t%x\t%s" % (pid, hMods[i], szModName.value))
+            mod_name = szModName.value
+            base_addr[mod_name] = hMods[i]
+            # print("process: %8d\t0x%08X\t%s" % (pid, hMods[i] or 0, mod_name))
             if i == 0:
-                exe_name = szModName.value
+                exe_name = mod_name
         else:
-            print("process: %8d\t%x\terror" % (pid, hMods[i]))
-            print_error("GetModuleBaseNameA")
+            print("process: %8d\t0x%08X\terror" % (pid, hMods[i] or 0))
+            print_error("GetModuleFileNameExA")
         i += 1
 
     ctypes.windll.kernel32.CloseHandle(hProcess)

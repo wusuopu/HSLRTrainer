@@ -10,7 +10,8 @@ import memory
 import utils
 
 
-BASE_ADDR = 0x7FFC233EB7E0
+BASE_OFFSET = 0x0559B7E0
+BASE_ADDR = 0x7FFC1500B7E0
 
 def find_game_process():
     processes = memory.list_process()
@@ -21,6 +22,14 @@ def find_game_process():
         if name == 'HSLR.exe':
             pid = item['pid']
             break
+
+    global BASE_ADDR
+    info = memory.get_process_info(pid)
+    base_addr = info[2]
+    for name in base_addr:
+        if name.endswith(b'GameAssembly.dll'):
+            # print("GameAssembly.dll: %08X" % (base_addr[name]))
+            BASE_ADDR = base_addr[name] + BASE_OFFSET
 
     return pid
 
@@ -220,7 +229,7 @@ def main():
         print("[%02d] 物品： %X，数量 ： %d" % (i, item['category'], item['count']))
         i += 1
 
-    set_warehouse_item(hProcess, 0xD4, 2, 10, None, materials)
+    # set_warehouse_item(hProcess, 0xD4, 2, 10, None, materials)
 
     memory.close_process(hProcess)
 

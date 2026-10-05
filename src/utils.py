@@ -154,3 +154,43 @@ def convert_power_value_to_hex_str(values, expand=True):
     data.append(values[4])  # 魔法命中率
     return int_array_to_hex_str(data, 4)
 
+
+if __name__ == '__main__':
+    data = []
+    v = int(input("输入攻击力： "))
+    data.append(v)
+
+    v = int(input("输入防御力： "))
+    data.append(v)
+
+    v = int(input("输入物理命中率： "))
+    data.append(v)
+
+    v = int(input("输入魔击力： "))
+    data.append(v)
+
+    v = int(input("输入魔法命中率： "))
+    data.append(v)
+
+    v = int(input("输入敏捷度： "))
+    data.append(v)
+
+    v = int(input("输入移动力： "))
+    data.append(v)
+
+    v = int(input("输入火抗： "))
+    data.append(v)
+
+    v = int(input("输入水抗： "))
+    data.append(v)
+
+    v = int(input("输入风抗： "))
+    data.append(v)
+
+    v = int(input("输入土抗： "))
+    data.append(v)
+
+    v = int(input("输入心抗： "))
+    data.append(v)
+
+    print("转换结果： %s" % convert_power_value_to_hex_str(data))
